@@ -13,25 +13,23 @@ I write this fork as I had dusted off my old mothballed BionX system, and needed
 limits to comply with updated legislation in my jurisdiction. With the company defunct, I couldn't
 get a dealer to reset it, and wanted to use a cheap Aliexpress CAN adapter.
 
-[!WARNING]
-A non-compliant system must not be ridden in public spaces, any limits changed with this tool
-must be compliant with local regulations. As well as legal trouble, raising speed limits can
-put yourself, others, and your bike in danger.
+> [!WARNING]
+> A non-compliant system must not be ridden in public spaces, any limits changed with this tool
+> must be compliant with local regulations. As well as legal trouble, raising speed limits can
+> put yourself, others, and your bike in danger.
 
-[!WARNING]
-Setting certain registers may leave your system unusable or difficult to recover. Please take
-extra care when manually setting registers.
+> [!WARNING]
+> Setting certain registers may leave your system unusable or difficult to recover. Please take
+> extra care when manually setting registers.
 
 ---
 
 ## 🚀 Key Features
 
 - **System Diagnostics**: View detailed hardware/software versions, serial numbers, and health statistics (cycle counts, temperature, voltage).
-- **Configuration**: Modify speed limits (Assist, Throttle, and Min Speed), wheel circumference, and initial assistance levels.
+- **Configuration**: Modify speed limits (Assist, Throttle, and Min Speed), console preferences, accessory voltage and more
 - **Advanced Sniffing**: Real-time or file-based (PCAP) CAN-bus monitoring with automatic register decoding into human-readable names and values.
-- **Protocol-Accurate Decoding**: High-fidelity identification of Query, Reply, and Set packets based on BionX protocol specifications.
-- **Direct Register Access**: Read any specific BionX register from any node using hex IDs or friendly names.
-- **Slave Mode Control**: Explicitly trigger or bypass the Console's "Slave Mode" for custom automation.
+- **Direct Register Access**: Read and write any specific BionX register from any node using hex IDs or friendly names.
 
 ---
 
@@ -67,7 +65,7 @@ The official way to connect (which is what the dealer interface does) is to
 use a tap cable inline where the console connector plug is. To do this, you
 need a pair of Hirose connectors (HR30-6J-6P and HR30-6P-6S), wire all 6 pins
 up in a straight through configuration, and tap off the GND, CAN_L and CAN_H
-connections.
+connections into the CANBus adapter.
 
 The connectors are however fairly expensive (about $20/pair).
 
@@ -107,7 +105,6 @@ sudo ip link add dev vcan0 type vcan
 sudo ip link set vcan0 up
 ./BionXtool -d vcan0 -S
 ```
-
 ---
 
 ## 📖 Usage
@@ -120,9 +117,6 @@ Retrieve a comprehensive report of all connected components, including software 
 ```bash
 # Print all system settings and statistics
 ./BionXtool -s
-
-# Print overview but hide sensitive serial/part numbers
-./BionXtool -s -i
 ```
 
 ### 2. Configuring System Limits & Geometry
@@ -176,6 +170,10 @@ Analyze the live communication between the console, battery, and motor.
 ./BionXtool -f capture.pcap
 ```
 
+Included in this repo are two captures. `bike-on-off.pcap` is a raw PCAP sniff
+from my bike being turned on, then turned off shortly after. `bike-on-off-txt`
+is the same but decoded.
+
 ### 5. Direct Register Access (Expert)
 Read or write individual registers on any node. Useful for advanced features or deep troubleshooting.
 
@@ -183,12 +181,12 @@ Read or write individual registers on any node. Useful for advanced features or 
 # Read Battery Hardware Revision (0x3B)
 ./BionXtool -R battery 0x3B
 
-# Write 0xAA to Motor Protection Unlock (0xA5)
-./BionXtool -W motor 0xA5 0xAA
+# Set config to enable accessory power at bike turn-on.
+./BionXtool -W console 0x80 0x1
 ```
 
 An almost complete list of all registers is in [registers.h](registers.h). Note
-that interacting with the console requires setting it into slave mode (-z),
+that interacting with the console requires first setting it into slave mode (-z),
 however this is not required for other components.
 
 ### 6. Power & State Control
@@ -246,5 +244,8 @@ Force system states or perform remote operations.
 
 This project is a fork of **BigXionFlasher**, originally developed by **Thomas König**. 
 It includes software developed by the BigXionFlasher Project (http://www.bigxionflasher.org/).
+
+Gemini CLI is used to assist coding tasks. Actual hardware engineering lovingly
+done by hand :)
 
 **Author of this fork:** Ben Buxton <bbuxton@gmail.com> (2026)
