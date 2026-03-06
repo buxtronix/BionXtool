@@ -38,7 +38,7 @@ get a dealer to reset it, and wanted to use a cheap Aliexpress CAN adapter.
 ### Hardware prerequisites
 - A BionX e-bike system using the CANBus protocol (post 2009 with G1/G2 console)
 - A USB CANBus interface running Candlelight (e.g CANable 2.0)
-- A way to physically connect to the bike CANBus
+- A way to physically connect to the bike CANBus (see below).
 
 ### Software Prerequisites
 - A Linux system with **SocketCAN** support.
@@ -86,11 +86,17 @@ high currents and moderate voltages (50v) present.
 I have been developing a slim flex PCB that slides under the console where
 it taps off the pogo pins. This is quite cheap, about $5 delivered from
 JLCPCB, then once mounted you solder wires to the flex PCB that sticks out
-from under the console.
+from under the console. I'll update here when it's ready.
 
 ## 🔌 Software Setup
 
-BionX systems communicate at a bitrate of **125,000 bits/s**. Before running the tool, you must bring up your CAN interface with the correct settings.
+Most CANable adapters come from the factory with _slcan_ firmware, so you
+will need to flash the _candlelight_ firmware onto it instead. This is really
+simple, you just plug it into a computer and click a couple of buttons on
+the [updater page](https://canable.io/updater/canable2.html).
+
+BionX systems communicate at a bitrate of **125,000 bits/s**. Before running the
+tool, you must bring up your CAN interface with the correct settings.
 
 ```bash
 # Bring up can0 with the BionX bitrate (125k)
