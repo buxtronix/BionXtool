@@ -1,7 +1,15 @@
 # BionXtool
 
-**BionXtool** is a specialized tool for diagnostics, configuration, and real-time monitoring of BionX e-bike
-components (Console, Battery, and Motor). It is a fork of the original [BigXionFlasher](https://bigxionflasher.org) project,
+<p align="center">
+  <img width="420" height="187" src="images/logo.png">
+</p>
+
+**BionXtool** is a tool for diagnostics, configuration, and real-time monitoring of BionX e-bike
+components (Console, Battery, and Motor). Together with a cheap (~$10) USB-CAN interface,
+it can replace almost all of the functionality of the official BBI Software and hardware
+interface (~$100).
+
+It is a fork of the original [BigXionFlasher](https://bigxionflasher.org) project,
 with the following enhancements:
 
 - Uses a cheap off the shelf USB Canbus adapter and standard Linux CAN networking
@@ -31,6 +39,8 @@ get a dealer to reset it, and wanted to use a cheap Aliexpress CAN adapter.
 - **Advanced Sniffing**: Real-time or file-based (PCAP) CAN-bus monitoring with automatic register decoding into human-readable names and values.
 - **Direct Register Access**: Read and write any specific BionX register from any node using hex IDs or friendly names.
 
+For a detailed description of the BionX CANBus protocol, see [PROTOCOL.md](PROTOCOL.md)..
+
 ---
 
 ## 🛠 Installation
@@ -57,7 +67,7 @@ make
 ## 🔌 Hardware Setup
 
 There are a few ways to interface with the CANBus on the bike. For reference,
-see this [wiring diagram](pinout.png).
+see this [wiring diagram](images/pinout.png).
 
 ### Connect to the existing plugs
 
@@ -122,7 +132,97 @@ Retrieve a comprehensive report of all connected components, including software 
 
 ```bash
 # Print all system settings and statistics
-./BionXtool -s
+$ ./BionXtool -s
+BionXtool V 0.1 (BionXtool)
+ (c) 2026 by Ben Buxton <bbuxton@gmail.com>
+
+console already in slave mode. good!
+
+
+
+Console information:
+ hardware version ........: 0x15
+ software version ........: 0x64
+ manufacture date ........: 13/01/2014
+ assistance level ........: 3 (0x03)
+ part number .............: 03205
+ item number .............: 00342
+ max limit enabled .......: yes
+ speed limit .............: 26.0 km/h
+ min limit enabled .......: yes
+ min speed limit .........: 0.2 km/h
+ throttle limit enabled ..: yes
+ throttle speed limit ....: 6.0 km/h
+ wheel circumference .....: 2075
+ mountain cap ............: 54.69%
+ odo .....................: 14258.40 km
+
+Battery information:
+ hardware version ........: 0x63
+ software version ........: 0x112
+ manufacture date ........: 07/09/2017
+ part number .............: 05560
+ item number .............: 00342
+ voltage .................: 53.13 V
+ battery level ...........: 100.00%
+ maximum voltage .........: 112.08%
+ minimum voltage .........: 95.42%
+ mean voltage ............: 110.00%
+ resets ..................: 0
+ lmd .....................: 10.40 Ah
+ cell capacity ...........: 2.15 Ah
+ charge time worst .......: 113
+ charge time mean ........: 0
+ charge cycles ...........: 268
+ full charge cycles ......: 0
+ power cycles ............: 969
+ battery temp max ........: 80°C
+ battery temp min ........: 239°C
+ accessory voltage config.: 8.20 V
+
+ charge level @ 010% : 0015
+ charge level @ 020% : 0015
+ charge level @ 030% : 0072
+ charge level @ 040% : 0088
+ charge level @ 050% : 0023
+ charge level @ 060% : 0028
+ charge level @ 070% : 0020
+ charge level @ 080% : 0004
+ charge level @ 090% : 0003
+ charge level @ 100% : 0003
+ total # of charges .: 0271
+
+ balancer enabled ...: no
+
+ voltage cell #01 ...: 4.085V
+ voltage cell #02 ...: 4.083V
+ voltage cell #03 ...: 4.080V
+ voltage cell #04 ...: 4.086V
+ voltage cell #05 ...: 4.081V
+ voltage cell #06 ...: 4.088V
+ voltage cell #07 ...: 4.086V
+ voltage cell #08 ...: 4.091V
+ voltage cell #09 ...: 4.098V
+ voltage cell #10 ...: 4.083V
+ voltage cell #11 ...: 4.066V
+ voltage cell #12 ...: 4.114V
+ voltage cell #13 ...: 4.088V
+ temperature pack #01: 29°C
+ temperature pack #02: 29°C
+ temperature pack #03: 29°C
+ temperature pack #04: 29°C
+ temperature pack #05: 14°C
+
+Motor information:
+ hardware version ........: 0x32
+ software version ........: 0x102
+ manufacture date ........: 09/11/2017
+ temperature .............: 37°C
+ speed limit .............: 26 km/h
+ wheel circumference .....: 2075
+ part number .............: 05989
+ item number .............: 00342
+
 ```
 
 ### 2. Configuring System Limits & Geometry

@@ -2,7 +2,7 @@
 
 The BionX system communicates over CANBus (125kbps), with the Console typically acting as the Bus Master.
 
-![BionX pinout](pinout.png)
+![BionX pinout](images/pinout.png)
 
 ## Node Network
 
@@ -48,37 +48,34 @@ For full details, see [registers.h](registers.h).
 ### Console Registers (`0x08` / `0x48`)
 | ID | Name | Description | Unit/Format |
 | :--- | :--- | :--- | :--- |
-| `0x64-67` | `ODOMETER` | Total system distance. | 0.1 km |
-| `0x81-82` | `CIRCUMFERENCE` | Wheel circumference for speed calculation. | mm |
-| `0x84-85` | `ASSIST_SPEED` | Assist speed limit. | 0.1 km/h |
-| `0x87-88` | `THROTTLE_SPEED`| Throttle speed limit. | 0.1 km/h |
-| `0x8A`    | `MIN_SPEED` | Minimum speed required for assist. | 0.1 km/h |
-| `0xA3`    | `SW_VERSION` | Console software version. | Hex |
-| `0xB4`    | `INIT_LEVEL` | Default assist level on power-up (0-4). | Raw |
-| `0xC6`    | `MOUNTAIN_CAP` | Assistance cap in Mountain Mode. | 1.5625 % |
-| `0xD1`    | `SLAVE_MODE` | Write `1` to force console into slave mode. | Boolean |
+| `0x64-67` | `REG_CONSOLE_STATISTIC_ODOMETER_*` | Total system distance. | 0.1 km |
+| `0x81-82` | `REG_CONSOLE_GEOMETRY_CIRC_*` | Wheel circumference for speed calculation. | mm |
+| `0x84-85` | `REG_CONSOLE_ASSIST_MAXSPEED_*` | Assist speed limit. | 0.1 km/h |
+| `0x87-88` | `REG_CONSOLE_THROTTLE_MAXSPEED_*`| Throttle speed limit. | 0.1 km/h |
+| `0x8A`    | `REG_CONSOLE_ASSIST_MINSPEED` | Minimum speed required for assist. | 0.1 km/h |
+| `0xB4`    | `REG_CONSOLE_ASSIST_INITLEVEL` | Default assist level on power-up (0-4). | Raw |
+| `0xD1`    | `REG_CONSOLE_STATUS_SLAVE` | Write `1` to force console into slave mode. | Boolean |
 
 ### Battery Registers (`0x10` / `0x50`)
 | ID | Name | Description | Unit/Format |
 | :--- | :--- | :--- | :--- |
-| `0x1E-1F` | `CURRENT` | Real-time current flow (signed). | 0.001 A |
-| `0x25`    | `SHUTDOWN` | Write `1` to trigger system power-off. | Trigger |
-| `0x28`    | `ACC_VOLTAGE` | Accessory port output voltage. | 0.1 V |
-| `0x32`    | `VOLTAGE_NORM` | Normalized battery voltage (3.7V/cell ref). | % |
-| `0x3B`    | `HW_VERSION` | Battery hardware version. | Hex |
-| `0x61`    | `CHARGE_LEVEL` | Current State of Charge (SoC). | 6.66 % |
-| `0x66-69` | `TEMPERATURE` | Temperature sensors 1-4. | °C |
-| `0xA6-A7` | `VOLTAGE` | Absolute battery pack voltage. | 0.001 V |
+| `0x1E-1F` | `REG_BATTERY_STATUS_CELLPACK_CURRENT_*` | Real-time current flow (signed). | 0.001 A |
+| `0x25`    | `REG_BATTERY_CONFIG_SHUTDOWN` | Write `1` to trigger system power-off. | Trigger |
+| `0x28`    | `REG_BATTERY_CONFIG_ACCESSORY_VOLTAGE` | Accessory port output voltage. | 0.1 V |
+| `0x32`    | `REG_BATTERY_STATUS_BATTERY_VOLTAGE_NORMALIZED` | Normalized battery voltage (3.7V/cell ref). | % |
+| `0x61`    | `REG_BATTERY_STATUS_CHARGE_LEVEL` | Current State of Charge (SoC). | 6.66 % |
+| `0x66-69` | `REG_BATTERY_STATUS_TEMPERATURE_SENSOR_*` | Temperature sensors 1-4. | °C |
+| `0xA6-A7` | `REG_BATTERY_STATUS_BATTERY_VOLTAGE_HI` | Absolute battery pack voltage. | 0.001 V |
 
 ### Motor Registers (`0x20` / `0x60`)
 | ID | Name | Description | Unit/Format |
 | :--- | :--- | :--- | :--- |
-| `0x09`    | `ASSIST_LEVEL` | Current motor assistance level. | 1.5625 % |
-| `0x11`    | `SPEED` | Motor rotational speed. | rpm |
-| `0x14`    | `POWER_METER` | Power output being delivered. | 1.5625 % |
-| `0x16`    | `TEMPERATURE` | Internal motor temperature. | °C |
-| `0x21`    | `TORQUE_GAUGE` | Raw signal from the torque sensor. | 1.5625 % |
-| `0xA5`    | `UNLOCK` | Write `0xAA` to unlock protected registers. | Key |
+| `0x09`    | `REG_MOTOR_ASSIST_LEVEL` | Current motor assistance level. | 1.5625 % |
+| `0x11`    | `REG_MOTOR_STATUS_SPEED` | Motor rotational speed. | rpm |
+| `0x14`    | `REG_MOTOR_STATUS_POWER_METER` | Power output being delivered. | 1.5625 % |
+| `0x16`    | `REG_MOTOR_STATUS_TEMPERATURE` | Internal motor temperature. | °C |
+| `0x21`    | `REG_MOTOR_TORQUE_GAUGE_VALUE` | Raw signal from the torque sensor. | 1.5625 % |
+| `0x8B`    | `REG_MOTOR_ASSIST_MAXSPEED` | Speed limit of the motor. | kph |
 
 ---
 
