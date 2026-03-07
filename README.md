@@ -5,9 +5,9 @@
 </p>
 
 **BionXtool** is a tool for diagnostics, configuration, and real-time monitoring of BionX e-bike
-components (Console, Battery, and Motor). Together with a cheap (~$10) USB-CAN interface,
+components (Console, Battery, and Motor). Together with a cheap ($10) USB-CAN interface,
 it can replace almost all of the functionality of the official BBI Software and hardware
-interface (~$100).
+interface ($100).
 
 It is a fork of the original [BigXionFlasher](https://bigxionflasher.org) project,
 with the following enhancements:
