@@ -53,5 +53,5 @@ glue - more rigid wire and/or no hot glue risks tearing the pads off.
 
 The other pins are also broken out for those who want to experiment more.
 
-![BionXtool sniffing the bike](images/adapter.png)
+![BionXtool sniffing the bike](images/connected.png)
 
