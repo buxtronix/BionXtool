@@ -30,7 +30,7 @@ of weeks.
 The $2 deal is for 0.11mm PCB - thicker options are much more expensive,
 but this one works (you may want to manually add a stiffening film).
 
-![Flex boards](images/board.png)
+![Flex boards](images/boards.png)
 
 ## Usage
 
