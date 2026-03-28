@@ -93,10 +93,14 @@ high currents and moderate voltages (50v) present.
 
 ### Console shim
 
-I have been developing a slim flex PCB that slides under the console where
+I have developed a slim flex PCB that slides under the console where
 it taps off the pogo pins. This is quite cheap, about $5 delivered from
 JLCPCB, then once mounted you solder wires to the flex PCB that sticks out
-from under the console. I'll update here when it's ready.
+from under the console.
+
+For details, see [here](adapter-pcb/).
+
+![Adapter PCB](adapter-pcb/images/mount.png)
 
 ## 🔌 Software Setup
 

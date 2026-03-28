@@ -685,13 +685,28 @@ void renderMonitor()
 		struct tm *tm_info = localtime(&sorted[i].last_seen.tv_sec);
 		char ts[32];
 		strftime(ts, sizeof(ts), "%H:%M:%S", tm_info);
-		
+    time_t past_time = mktime(tm_info);
+    time_t current_time = time(NULL);
+    double age = difftime(current_time, past_time);
+    if (age < 1) {
+      attron(COLOR_PAIR(1));
+    } else if (age < 5) {
+      attron(COLOR_PAIR(2));
+    }
+
 		mvprintw(i + 3, 0, "[%s.%03ld] %-7s: %-35s (0x%02X) = %s", 
 		         ts, sorted[i].last_seen.tv_usec / 1000,
 		         getNodeName(sorted[i].node),
 		         sorted[i].reg_name,
 		         sorted[i].reg,
 		         sorted[i].val_str);
+
+    if (age < 1) {
+      attroff(COLOR_PAIR(1));
+    } else if (age < 5) {
+      attroff(COLOR_PAIR(2));
+    }
+
 	}
 	refresh();
 }
@@ -703,6 +718,11 @@ void monitorBus()
 	struct timeval tv;
 
 	initscr();
+  if (has_colors()) {
+    start_color();
+  }
+  init_pair(1, COLOR_GREEN, COLOR_BLACK);
+  init_pair(2, COLOR_YELLOW, COLOR_BLACK);
 	raw();
 	keypad(stdscr, TRUE);
 	noecho();

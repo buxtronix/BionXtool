@@ -79,6 +79,54 @@ For full details, see [registers.h](registers.h).
 
 ---
 
+## System Operation Sequence
+
+Analysis of the CANBus traffic reveals a structured sequence for system startup, steady-state
+operation, and shutdown.
+
+### 1. Power-On & Initialization
+When the system is powered on, the Console (acting as Master) orchestrates the following handshake:
+
+#### Phase A: Battery Initialization
+1.  **Wake-up**: Console sends `SET 0x20 = 0` (Reset/Init) and `SET REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE (0x21) = 1` to enable the high-voltage power rail.
+2.  **Identification**: Console queries `REG_BATTERY_REV_HW (0x3B)` and `REG_BATTERY_REV_SW (0x3C)`.
+3.  **Config**: Console sets `REG_BATTERY_CONFIG_ACCESSORY_ENABLED (0x22)` and queries `REG_BATTERY_CONFIG_TYPE (0x3D)`.
+
+#### Phase B: Motor Initialization
+1.  **Wake-up**: Console sends `SET 0x02 = 0`, `SET 0x41 = 0`, and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1` (Clockwise).
+2.  **Identification**: Console queries `REG_MOTOR_REV_SW (0x20)`.
+3.  **Sensor Check**: Console queries `REG_MOTOR_TORQUE_GAUGE_TYPE (0x6C)`.
+
+#### Phase C: Limit Synchronization
+To ensure system safety, the Console mirrors Battery limits to the Motor:
+1.  **Read Battery**: Queries `REG_BATTERY_CONFIG_MAX_CHARGE_HI/LO (0xF9/0xFA)` and `MAX_DISCHARGE_HI/LO (0xFB/0xFC)`.
+2.  **Unlock Motor**: Sends `SET REG_MOTOR_PROTECT_UNLOCK (0xA5) = 0xAA`.
+3.  **Write Motor**: Sets `REG_MOTOR_CONFIG_MAX_DISCHARGE_HI/LO (0x7A/0x7B)` and `MAX_CHARGE_HI/LO (0x7C/0x7D)` to match battery capabilities.
+
+### 2. Main Operation Loop (Steady State)
+Once initialized, the Console enters a high-frequency control loop (approx. **60ms to 100ms** interval).
+
+*   **Input Sampling**: The Console continuously queries:
+    *   `REG_MOTOR_TORQUE_GAUGE_VALUE (0x21)` (Rider effort)
+    *   `REG_MOTOR_STATUS_SPEED (0x11)` (Bike speed)
+    *   `REG_MOTOR_STATUS_POWER_METER (0x14)` (Current assist level)
+*   **Control Output**: Based on the inputs and user assist level (0-4), the Console sends:
+    *   `SET REG_MOTOR_ASSIST_LEVEL (0x09)` (Calculated assistance %)
+    *   `SET REG_MOTOR_ASSIST_WALK_LEVEL (0x0A)` (Throttle/Walk assist)
+*   **Health Monitoring**: At a lower frequency (interleaved in the loop), the Console queries:
+    *   Battery Normalized Voltage (`0x32`) and absolute Voltage (`0xAA`)
+    *   Cellpack Current Flow (`0x1E`, `0x1F`)
+    *   Internal Temperatures (`0xE1`, `0xE2` Battery, `0x16` Motor)
+    *   RTC Time (`0xA1-0xA4`) and State of Charge (`0x30`, `0x61`)
+
+### 3. Power-Off Sequence
+Triggered by a long-press on the Console or a system timeout:
+1.  **Stop Motor**: Sends `SET REG_MOTOR_ASSIST_LEVEL (0x09) = 0`.
+2.  **Motor Standby**: Sends `SET 0x41 = 0` and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1`.
+3.  **BMS Shutdown**: Sends `SET REG_BATTERY_CONFIG_SHUTDOWN (0x25) = 1`. The Battery Management System then cuts the high-voltage rail and enters a low-power sleep state.
+
+---
+
 ## Register Protection
 Critical registers (like speed limits or battery configuration) are often protected.
 To modify a protected register:
