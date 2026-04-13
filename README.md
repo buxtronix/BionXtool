@@ -181,8 +181,10 @@ Battery information:
  full charge cycles ......: 0
  power cycles ............: 969
  battery temp max ........: 80°C
- battery temp min ........: 239°C
+ battery temp min ........: -17°C
  accessory voltage config.: 8.20 V
+ RTC timestamp............: 2088d 16:40:16
+
 
  charge level @ 010% : 0015
  charge level @ 020% : 0015
@@ -250,6 +252,9 @@ Adjust the behavior of the bike to match local regulations or your preferences.
 
 # Set mountain cap level (assist percentage)
 ./BionXtool -o 55
+
+# Set clock to current local time
+./BionXtool -T
 ```
 
 ### 3. Battery & Accessory Configuration
@@ -334,6 +339,7 @@ Force system states or perform remote operations.
 | `-o` | `<pct>` | Set mountain cap assist level (0-100%) |
 | `-v` | `<volt>` | Set battery accessory voltage (6.0 - 14.0V) |
 | `-A` | `<0\|1>` | Set battery accessory power (0=off, 1=on) |
+| `-T` | | Update clock (RTC). Stored in battery |
 | **Sniffing** | | |
 | `-M` | | **Monitor Mode**: Interactive TUI dashboard |
 | `-S` | | **Sniff Mode**: Stream decoded packets |
@@ -347,6 +353,12 @@ Force system states or perform remote operations.
 | `-p` | | Power off system |
 
 ---
+
+## 🛠Changelog
+
+- 2026-04-14: rtc support. various register clarifications
+- 2026-03-28: added adapter pcb info
+- 2026-03-06: initial version
 
 ## ⚖️ License & Attribution
 

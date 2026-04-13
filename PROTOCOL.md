@@ -88,12 +88,12 @@ operation, and shutdown.
 When the system is powered on, the Console (acting as Master) orchestrates the following handshake:
 
 #### Phase A: Battery Initialization
-1.  **Wake-up**: Console sends `SET 0x20 = 0` (Reset/Init) and `SET REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE (0x21) = 1` to enable the high-voltage power rail.
+1.  **Wake-up**: Console sends `SET REG_BATTERY_ALARM_ENABLE = 0` (Alarm off) and `SET REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE (0x21) = 1` to enable the high-voltage power rail.
 2.  **Identification**: Console queries `REG_BATTERY_REV_HW (0x3B)` and `REG_BATTERY_REV_SW (0x3C)`.
 3.  **Config**: Console sets `REG_BATTERY_CONFIG_ACCESSORY_ENABLED (0x22)` and queries `REG_BATTERY_CONFIG_TYPE (0x3D)`.
 
 #### Phase B: Motor Initialization
-1.  **Wake-up**: Console sends `SET 0x02 = 0`, `SET 0x41 = 0`, and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1` (Clockwise).
+1.  **Wake-up**: Console sends `SET REG_MOTOR_SET_WAKEUP = 0`, `SET REG_MOTOR_SET_3KMH = 0`, and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1` (Clockwise).
 2.  **Identification**: Console queries `REG_MOTOR_REV_SW (0x20)`.
 3.  **Sensor Check**: Console queries `REG_MOTOR_TORQUE_GAUGE_TYPE (0x6C)`.
 
@@ -122,7 +122,7 @@ Once initialized, the Console enters a high-frequency control loop (approx. **60
 ### 3. Power-Off Sequence
 Triggered by a long-press on the Console or a system timeout:
 1.  **Stop Motor**: Sends `SET REG_MOTOR_ASSIST_LEVEL (0x09) = 0`.
-2.  **Motor Standby**: Sends `SET 0x41 = 0` and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1`.
+2.  **Motor Standby**: Sends `SET REG_MOTOR_SET_3KMH = 0` and `SET REG_MOTOR_ASSIST_DIRECTION (0x42) = 1`.
 3.  **BMS Shutdown**: Sends `SET REG_BATTERY_CONFIG_SHUTDOWN (0x25) = 1`. The Battery Management System then cuts the high-voltage rail and enters a low-power sleep state.
 
 ---
@@ -130,6 +130,12 @@ Triggered by a long-press on the Console or a system timeout:
 ## Register Protection
 Critical registers (like speed limits or battery configuration) are often protected.
 To modify a protected register:
-1.  Write `0xAA` to the node's `UNLOCK` register (e.g., `0xA5` on Motor, `0x71` on Battery).
+1.  Write to the node's `UNLOCK` register (e.g., `0xA5` on Motor, `0x71` on Battery).
 2.  Write the new value to the target register.
-3.  Write `0x00` to the `UNLOCK` register to re-lock.
+
+The value to send to the `UNLOCK` register depends on the component. For the
+motor, you must send `0xAA` which will unlock for 30 seconds. For the battery,
+the unlock takes effect for however many seconds you send. Note that there
+are some magic values for the battery that may affect the firmware, so avoid
+sending anything over 0x54.
+

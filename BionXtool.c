@@ -87,7 +87,7 @@
 #define doSleep(x) usleep(x*1000)
 
 int gAssistInitLevel = -1, gPrintSystemSettings = 0, gSkipShutdown = 0, gPowerOff = 0, gConsoleSetSlaveMode = 1, gNoSerialNumbers = 0, gSetMountainCap = -1, gSetWheelCircumference = 0, gSniffMode = 0, gForceSlaveMode = 0;
-int gReadSpecificReg = 0, gWriteSpecificReg = 0, gSetAccessoryPower = -1, gMonitorMode = 0, gSortLatestFirst = 0, gSniffOnlyChanges = 0;
+int gReadSpecificReg = 0, gWriteSpecificReg = 0, gSetAccessoryPower = -1, gMonitorMode = 0, gSortLatestFirst = 0, gSniffOnlyChanges = 0, gSetRTC = 0;
 char *gPcapFile = NULL;
 
 /* State for 'only changed' sniffing */
@@ -189,11 +189,13 @@ enum val_format {
 	F_PCT_ASSIST, /* 1.5625 */
 	F_PCT_BATT,  /* 6.6667 */
 	F_TEMP_C,
+	F_TEMP_C_S,  /* Signed temperature */
 	F_AH_D3,     /* 0.001 */
 	F_AH_LMD,    /* 0.002142 */
 	F_KM_D1,     /* 0.1 */
 	F_SN,        /* 5 digits */
 	F_DATE,      /* DD/MM/YYYY */
+	F_RTC,       /* DDd HH:MM:SS */
 	F_UINT16_BE,
 	F_UINT32_BE
 };
@@ -292,13 +294,15 @@ static struct reg_metadata bionx_registers[] = {
 	{BATTERY, REG_BATTERY_STATUS_CONTROL_VOLTAGE_HI, "REG_BATTERY_STATUS_CONTROL_VOLTAGE_HI", F_VOLT_D3},
 	{BATTERY, REG_BATTERY_STATUS_CONTROL_VOLTAGE_LO, "REG_BATTERY_STATUS_CONTROL_VOLTAGE_LO", F_RAW},
 	{BATTERY, REG_BATTERY_CONFIG_ACCESSORY_VOLTAGE, "REG_BATTERY_CONFIG_ACCESSORY_VOLTAGE", F_VOLT_D1},
+	{BATTERY, REG_BATTERY_STATUS_REMAINING, "REG_BATTERY_STATUS_REMAINING", F_RAW},
+	{BATTERY, REG_BATTERY_STATUS_CHARGE_PLUG, "REG_BATTERY_STATUS_CHARGE_PLUG", F_BOOL},
 	{BATTERY, REG_BATTERY_STATUS_CHARGE_LEVEL, "REG_BATTERY_STATUS_CHARGE_LEVEL", F_PCT_BATT},
 	{BATTERY, REG_BATTERY_STATUS_TEMPERATURE_SENSOR_1, "REG_BATTERY_STATUS_TEMPERATURE_SENSOR_1", F_TEMP_C},
 	{BATTERY, REG_BATTERY_STATUS_TEMPERATURE_SENSOR_2, "REG_BATTERY_STATUS_TEMPERATURE_SENSOR_2", F_TEMP_C},
 	{BATTERY, REG_BATTERY_STATUS_TEMPERATURE_SENSOR_3, "REG_BATTERY_STATUS_TEMPERATURE_SENSOR_3", F_TEMP_C},
 	{BATTERY, REG_BATTERY_STATUS_TEMPERATURE_SENSOR_4, "REG_BATTERY_STATUS_TEMPERATURE_SENSOR_4", F_TEMP_C},
 	{BATTERY, REG_BATTERY_STATUS_ESTIMATED_SOC, "REG_BATTERY_STATUS_ESTIMATED_SOC", F_RAW},
-	{BATTERY, REG_BATTERY_RTC_TIME_HIHI, "REG_BATTERY_RTC_TIME_HIHI", F_RAW},
+	{BATTERY, REG_BATTERY_RTC_TIME_HIHI, "REG_BATTERY_RTC_TIME_HIHI", F_RTC},
 	{BATTERY, REG_BATTERY_RTC_TIME_HILO, "REG_BATTERY_RTC_TIME_HILO", F_RAW},
 	{BATTERY, REG_BATTERY_RTC_TIME_LOHI, "REG_BATTERY_RTC_TIME_LOHI", F_RAW},
 	{BATTERY, REG_BATTERY_RTC_TIME_LOLO, "REG_BATTERY_RTC_TIME_LOLO", F_RAW},
@@ -323,9 +327,10 @@ static struct reg_metadata bionx_registers[] = {
 	{BATTERY, REG_BATTERY_STATISTIC_BATTERY_FULL_CYCLES_LO, "REG_BATTERY_STATISTIC_BATTERY_FULL_CYCLES_LO", F_RAW},
 	{BATTERY, REG_BATTERY_STATISTIC_POWER_CYCLES_HI, "REG_BATTERY_STATISTIC_POWER_CYCLES_HI", F_UINT16_BE},
 	{BATTERY, REG_BATTERY_STATISTIC_POWER_CYCLES_LO, "REG_BATTERY_STATISTIC_POWER_CYCLES_LO", F_RAW},
-	{BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MAX, "REG_BATTERY_STATISTIC_TEMPERATURE_MAX", F_TEMP_C},
-	{BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MIN, "REG_BATTERY_STATISTIC_TEMPERATURE_MIN", F_TEMP_C},
+	{BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MAX, "REG_BATTERY_STATISTIC_TEMPERATURE_MAX", F_TEMP_C_S},
+	{BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MIN, "REG_BATTERY_STATISTIC_TEMPERATURE_MIN", F_TEMP_C_S},
 	{BATTERY, REG_BATTERY_CELLMON_BALANCER_ENABLED, "REG_BATTERY_CELLMON_BALANCER_ENABLED", F_BOOL},
+	{BATTERY, REG_BATTERY_ALARM_ENABLE, "REG_BATTERY_ALARM_ENABLE", F_BOOL},
 	{BATTERY, REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE, "REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE", F_BOOL},
 	{BATTERY, REG_BATTERY_CONFIG_ACCESSORY_ENABLED, "REG_BATTERY_CONFIG_ACCESSORY_ENABLED", F_BOOL},
 	{BATTERY, REG_BATTERY_CONFIG_SHUTDOWN, "REG_BATTERY_CONFIG_SHUTDOWN", F_RAW},
@@ -351,6 +356,9 @@ static struct reg_metadata bionx_registers[] = {
 	{BATTERY, REG_BATTERY_PROTECT_UNLOCK, "REG_BATTERY_PROTECT_UNLOCK", F_RAW},
 
 	/* Motor Registers */
+	{MOTOR, REG_MOTOR_SET_IDLE, "REG_MOTOR_SET_IDLE", F_RAW},
+	{MOTOR, REG_MOTOR_SET_WAKEUP, "REG_MOTOR_SET_WAKEUP", F_RAW},
+	{MOTOR, REG_MOTOR_SET_3KMH, "REG_MOTOR_SET_3KMH", F_BOOL},
 	{MOTOR, REG_MOTOR_REV_SW, "REG_MOTOR_REV_SW", F_VERSION},
 	{MOTOR, REG_MOTOR_REV_HW, "REG_MOTOR_REV_HW", F_VERSION},
 	{MOTOR, REG_MOTOR_REV_SUB, "REG_MOTOR_REV_SUB", F_RAW},
@@ -382,6 +390,7 @@ static struct reg_metadata bionx_registers[] = {
 	{MOTOR, REG_MOTOR_ASSIST_LEVEL, "REG_MOTOR_ASSIST_LEVEL", F_PCT_ASSIST},
 	{MOTOR, REG_MOTOR_ASSIST_WALK_LEVEL, "REG_MOTOR_ASSIST_WALK_LEVEL", F_PCT_ASSIST},
 	{MOTOR, REG_MOTOR_STATUS_SPEED, "REG_MOTOR_STATUS_SPEED", F_RAW},
+	{MOTOR, REG_MOTOR_STATUS_DISTANCE, "REG_MOTOR_STATUS_DISTANCE", F_RAW},
 	{MOTOR, REG_MOTOR_STATUS_POWER_METER, "REG_MOTOR_STATUS_POWER_METER", F_PCT_ASSIST},
 	{MOTOR, REG_MOTOR_STATUS_CODES, "REG_MOTOR_STATUS_CODES", F_RAW},
 	{MOTOR, REG_MOTOR_CONFIG_MAX_DISCHARGE_HI, "REG_MOTOR_CONFIG_MAX_DISCHARGE_HI", F_UINT16_BE},
@@ -443,9 +452,10 @@ static struct system_setting system_overview_table[] = {
 	{NULL,                   "charge cycles ...........:", BATTERY, REG_BATTERY_STATISTIC_BATTERY_CYCLES_HI, 2, F_UINT16_BE, 0, 0},
 	{NULL,                   "full charge cycles ......:", BATTERY, REG_BATTERY_STATISTIC_BATTERY_FULL_CYCLES_HI, 2, F_UINT16_BE, 0, 0},
 	{NULL,                   "power cycles ............:", BATTERY, REG_BATTERY_STATISTIC_POWER_CYCLES_HI, 2, F_UINT16_BE, 0, 0},
-	{NULL,                   "battery temp max ........:", BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MAX, 1, F_TEMP_C, 0, 0},
-	{NULL,                   "battery temp min ........:", BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MIN, 1, F_TEMP_C, 0, 0},
+	{NULL,                   "battery temp max ........:", BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MAX, 1, F_TEMP_C_S, 0, 0},
+	{NULL,                   "battery temp min ........:", BATTERY, REG_BATTERY_STATISTIC_TEMPERATURE_MIN, 1, F_TEMP_C_S, 0, 0},
 	{NULL,                   "accessory voltage config.:", BATTERY, REG_BATTERY_CONFIG_ACCESSORY_VOLTAGE, 1, F_VOLT_D1, 0, 0},
+	{NULL,                   "RTC timestamp............:", BATTERY, REG_BATTERY_RTC_TIME_HIHI, 4, F_RTC, 0, 0},
 
 	{"Motor information:", "hardware version ........:", MOTOR, REG_MOTOR_REV_HW, 1, F_VERSION, 0, 0},
 	{NULL,                 "software version ........:", MOTOR, REG_MOTOR_REV_SW, 1, F_VERSION, 0, 0},
@@ -491,6 +501,7 @@ void formatValue(char *buf, size_t len, const struct reg_metadata *meta, enum va
 		case F_PCT_ASSIST: snprintf(buf, len, "%0.2f%%", raw_val * 1.5625); break;
 		case F_PCT_BATT: snprintf(buf, len, "%0.2f%%", raw_val * 6.6667); break;
 		case F_TEMP_C: snprintf(buf, len, "%d" _DEGREE_SIGN "C", (int)raw_val); break;
+		case F_TEMP_C_S: snprintf(buf, len, "%hhd" _DEGREE_SIGN "C", (int)raw_val); break;
 		case F_AH_D3: snprintf(buf, len, "%0.2f Ah", raw_val * 0.001); break;
 		case F_AH_LMD: snprintf(buf, len, "%0.2f Ah", raw_val * 0.002142); break;
 		case F_KM_D1: snprintf(buf, len, "%0.2f km", raw_val * 0.1); break;
@@ -500,6 +511,16 @@ void formatValue(char *buf, size_t len, const struct reg_metadata *meta, enum va
 			unsigned int m = (raw_val >> 8) & 0xFF;
 			unsigned int d = raw_val & 0xFF;
 			snprintf(buf, len, "%02u/%02u/20%02u", d, m, y);
+			break;
+		}
+		case F_RTC: {
+			unsigned int day = (raw_val / 86400);
+			raw_val %= 86400;
+			unsigned int hour = (raw_val / 3600);
+			raw_val %= 3600;
+			unsigned int min = (raw_val / 60);
+			raw_val %= 60;
+			snprintf(buf, len, "%dd %02u:%02u:%02u", day, hour, min, raw_val);
 			break;
 		}
 		case F_UINT16_BE: snprintf(buf, len, "%u", raw_val); break;
@@ -1005,11 +1026,40 @@ void setAccessoryVoltage(double voltage)
 		value = (int)(voltage / 6);
 	}
 
-	setValue(BATTERY, REG_BATTERY_PROTECT_UNLOCK, BATTERY_PROTECT_UNLOCK_KEY);
+	setValue(BATTERY, REG_BATTERY_PROTECT_UNLOCK, 0x10);
 	doSleep(500);
 	setValue(BATTERY, BATTERY_CONFIG_ACCESSORY_VOLTAGE, value);
-	doSleep(500);
-	setValue(BATTERY, REG_BATTERY_PROTECT_UNLOCK, BATTERY_PROTECT_LOCK_KEY);
+}
+
+void setBatteryRTC()
+{
+    time_t raw_time;
+    struct tm *tm_info;
+    time(&raw_time);
+    tm_info = localtime(&raw_time);
+
+    unsigned int rtcValue = (getValue(BATTERY, REG_BATTERY_RTC_TIME_HIHI) << 24) +
+                            (getValue(BATTERY, REG_BATTERY_RTC_TIME_HILO) << 16) +
+                            (getValue(BATTERY, REG_BATTERY_RTC_TIME_LOHI) << 8) +
+                            (getValue(BATTERY, REG_BATTERY_RTC_TIME_LOLO));
+    char rtcStr[32];
+    formatValue(rtcStr, sizeof(rtcStr), NULL, F_RTC, rtcValue);
+    printf(" RTC Value was: %s (0x%x)" _NL, rtcStr, rtcValue);
+
+    unsigned int days = rtcValue / 86400; // Convert to integer.
+    rtcValue = days*86400 + tm_info->tm_hour*3600 + tm_info->tm_min*60 + tm_info->tm_sec;
+
+    setValue(BATTERY, REG_BATTERY_PROTECT_UNLOCK, 0x10);
+    doSleep(50);
+    setValue(BATTERY, REG_BATTERY_RTC_TIME_HIHI, (rtcValue >>24)&0xFF);
+    doSleep(50);
+    setValue(BATTERY, REG_BATTERY_RTC_TIME_HILO, (rtcValue >>16)&0xFF);
+    doSleep(50);
+    setValue(BATTERY, REG_BATTERY_RTC_TIME_LOHI, (rtcValue >>8)&0xFF);
+    doSleep(50);
+    setValue(BATTERY, REG_BATTERY_RTC_TIME_LOLO, rtcValue&0xFF);
+    doSleep(50);
+    printf(" Set RTC to current time (%02d:%02d:%02d) (%08x)" _NL, tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec, rtcValue);
 }
 
 void printBatteryStats()
@@ -1031,7 +1081,7 @@ void printBatteryStats()
 	}
 
 	for (channel = 0 ; channel < packParallel ; channel ++)
-		printf(" temperature pack #%02d: %d" _DEGREE_SIGN "C" _NL, channel + 1,
+		printf(" temperature pack #%02d: %hhd" _DEGREE_SIGN "C" _NL, channel + 1,
 				getValue(BATTERY, BATTERY_STATUS_PACKTEMPERATURE1 + channel));
 	
 	printf(_NL);
@@ -1069,6 +1119,7 @@ void usage(void) {
 			" -c <wheel circumference> . set the wheel circumference (in mm)" _NL
 			" -R <node|id> <reg> ....... read a specific register from a node (e.g. -R battery 0x3B)" _NL
 			" -W <node|id> <reg> <val> . write a specific register value to a node (e.g. -W motor 0xA5 0xAA)" _NL
+			" -T ....................... write current time to RTC" _NL
 			" -s ....................... print system settings overview" _NL
 			" -S ....................... sniff CAN bus" _NL
 			" -C ....................... sniff CAN bus, only display changes" _NL
@@ -1085,7 +1136,7 @@ void usage(void) {
 int parseOptions(int argc, char **argv)
 {
 	int oc;
-	char odef[] = "d:l:t:m:sa:pnxio:c:v:h?SCR:zW:A:f:M";
+	char odef[] = "d:l:t:m:sa:pnxio:c:v:h?SCR:zW:A:f:MT";
 
 	while((oc = getopt(argc,argv,odef)) != -1) {
 		switch(oc) {
@@ -1106,6 +1157,9 @@ int parseOptions(int argc, char **argv)
 					return -1;
 				}
 				break;
+      case 'T':
+        gSetRTC = 1;
+        break;
 			case 'W':
 				gWriteSpecificReg = 1;
 				gWriteNode = getNodeIdByName(optarg);
@@ -1321,7 +1375,7 @@ int main(int argc, char **argv)
 	}
 
 	int commandsRequested = (gReadSpecificReg || gWriteSpecificReg || gSniffMode || gMonitorMode || gPrintSystemSettings || gPowerOff ||
-	                         gAssistInitLevel != -1 || gSetSpeedLimit != -1 || gSetMinSpeedLimit != -1 ||
+	                         gAssistInitLevel != -1 || gSetSpeedLimit != -1 || gSetMinSpeedLimit != -1 || gSetRTC ||
 	                         gSetThrottleSpeedLimit != -1 || gSetMountainCap != -1 ||
 	                         gSetWheelCircumference > 0 || gSetAccessoryVoltage > 0 || gSetAccessoryPower != -1);
 
@@ -1415,6 +1469,11 @@ int main(int argc, char **argv)
 		printf("set battery accessory voltage to %0.1fV" _NL, gSetAccessoryVoltage);
 		setAccessoryVoltage(gSetAccessoryVoltage);
 	}
+
+  if (gSetRTC > 0) {
+    printf("setting RTC (stored in battery)" _NL);
+    setBatteryRTC();
+  }
 
 	if (gSetAccessoryPower != -1) {
 		printf("setting battery accessory power to %s" _NL, gSetAccessoryPower ? "ON" : "OFF");

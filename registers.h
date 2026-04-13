@@ -262,6 +262,7 @@
 #define REG_BATTERY_STATUS_CELLPACK_CURRENT_HI                 0x1E    //Reading battery current by a shunt resistor. No delay, no calibration compared to battery.gg.ai [unit:A, factor:0.001]
 #define REG_BATTERY_STATUS_CELLPACK_CURRENT_LO                 0x1F //!!! signed !!!
 
+#define REG_BATTERY_ALARM_ENABLE                               0x20    // Enable/disable bike lock/alarm (never implemented?)
 #define REG_BATTERY_CONFIG_POWER_VOLTAGE_ENABLE                0x21    //- ??? Enable/Disable vPower ???
 #define REG_BATTERY_CONFIG_ACCESSORY_ENABLED                   0x22
 #define REG_BATTERY_CONFIG_SHUTDOWN                            0x25    //write 1 to shutdwon system
@@ -274,6 +275,7 @@
 #define BATTERY_CONFIG_COMMUNICATION_MODE_KEY                  0xAA
 
 #define REG_BATTERY_STATUS_ESTIMATED_SOC                       0x30    //Return an estimated value of SOC based on battery voltage. Only works with LiIon battery [unit:%]
+#define REG_BATTERY_STATUS_CHARGE_PLUG                         0x31    //Whether charger is plugged in.
 #define REG_BATTERY_STATUS_BATTERY_VOLTAGE_NORMALIZED          0x32    //Battery voltage normalized with 3.7V/cell. status.vBattInternal it used in Rev 104 and less otherwise status.vBatt [unit:V, factor:0.416667, offset:20.8333]
 #define REG_BATTERY_STATISTIC_BATTERY_AVGVOLTAGE_NORMALIZED    0x33    //Average battery voltage read during 50s based on battery.status.vBatt, in percentage of its nominal voltage [unit:V, factor:0.416667, offset:20.8333]
 #define BATTERY_STATS_VBATTMEAN                                REG_BATTERY_STATISTIC_BATTERY_AVGVOLTAGE_NORMALIZED
@@ -342,10 +344,8 @@
 #define BATTERY_CELLMON_CHANNELDATA_LO                         REG_BATTERY_CELLMON_CHANNELDATA_LO
 #define REG_BATTERY_CELLMON_CALIBRATION_DATA_LO                0x6F    //cell calibration data, select cell via #define REG_BATTERY_CELLMON_CHANNEL register
 
-#define REG_BATTERY_PROTECT_UNLOCK                             0x71
-#define BATTERY_PROTECT_LOCK_KEY                               0x00
-#define BATTERY_PROTECT_UNLOCK_KEY                             0xAA
-
+#define REG_BATTERY_PROTECT_UNLOCK                             0x71 // Unlocks protected registers. The value sent is the duration in seconds to unlock for.
+                                                                    // Some special values >= 0x55 do reserved functions, avoid!
 #define REG_BATTERY_SN_YEAR                                    0x72 //mfd. year
 #define REG_BATTERY_SN_MONTH                                   0x73 //mfd. month
 #define REG_BATTERY_SN_DAY                                     0x74 //mfd day
@@ -364,6 +364,8 @@
 #define REG_BATTERY_STATUS_POWERON_RESET_COUNT                 0x7D    //Return how many time main microcontroller hardly reset
 #define REG_BATTERY_CONFIG_AUTOSWITCH_COMMUNICATION            0x7E    //++++ Allow to switch communication mode without shutdown. Write 0xAA, then 0x01. Comm. mode switches. Communicate with desired comm. mode before 5s (100ms min) to validate. Write 0 to desactivate
 #define BATTERY_CONFIG_AUTOSWITCH_COMMUNICATION_KEY            0xAA
+
+#define REG_BATTERY_STATUS_REMAINING                           0x80    // Remaining battery estimate. [unit:min] [factor:6] (0x02=12mins). Specials: 0xFB = maximum battery, 0xFC = empty battery, 0xFD = not calculated, 0xFE = charging, 0xFF = not implemented or error.
 
 #define REG_BATTERY_BRIGDE_CHARGER_ADDR                        0x85    //gateway to charger write address here (needs unlocking)
 #define REG_BATTERY_BRIGDE_CHARGER_DATA                        0x86    //and read data here
@@ -577,6 +579,8 @@
  * MOTOR REGISTERS (Node 0x20 / 0x60)
  * ==================================================================== */
 
+#define REG_MOTOR_SET_IDLE                                     0x01    // Puts motor into idle, value is ignored.
+#define REG_MOTOR_SET_WAKEUP                                   0x02    // Wakes up motor, value is ignored.
 #define REG_MOTOR_ASSIST_LEVEL                                 0x09    //[unit:%, range:-100..100, factor:1.5625] !!! signed !!!
 #define REG_MOTOR_ASSIST_WALK_LEVEL                            0x0A    //Top level when assisting in walk mode [unit:%, factor:1.5625]
 #define REG_MOTOR_ASSIST_WALK_SPEED_DECREASE_START             0x0B    //Speed from which the motor starts diminishing its assistance when using the "walk mode" [unit:km/h, factor:0.1]
@@ -584,6 +588,7 @@
 #define REG_MOTOR_ASSIST_WALK_LEVEL_MAX                        0x0D    //Top level when assisting in walk mode [unit:%, factor:1.5625]
 
 #define REG_MOTOR_STATUS_SPEED                                 0x11    //- [unit:rpm, factor:9.091]
+#define REG_MOTOR_STATUS_DISTANCE                              0x12    // Number of revolutions since last read. Reset to zero after each read.
 #define REG_MOTOR_STATUS_POWER_METER                           0x14    //- [unit:%, factor:1.5625]
 #define REG_MOTOR_STATUS_TEMPERATURE                           0x16    //- [unit:C]
 #define MOTOR_REALTIME_TEMP                                    REG_MOTOR_STATUS_TEMPERATURE
@@ -597,6 +602,7 @@
 #define REG_MOTOR_REV_SUB                                      0x22    //software subversion
 #define REG_MOTOR_CONFIG_COMMUNICATION_MODE_LO                 0x36    //- 8 bit until sw 83
 #define REG_MOTOR_ASSIST_LOWSPEED_RAMP_FLAG                    0x40    //Enables a lower speed ramp. 0: Ramp disabled 1: Ramp enabled
+#define REG_MOTOR_SET_3KMH                                     0x41    //Set a 3kph safety limit. Never implemented?
 #define REG_MOTOR_ASSIST_DIRECTION                             0x42
 #define REG_MOTOR_SN_STATOR_TYPE                               0x43
 #define REG_MOTOR_GEOMETRY_CIRC_HI                             0x44
@@ -656,9 +662,9 @@
 #define REG_MOTOR_STATUS_CODES_LATCH                           0x93    //Indicates conditions detected by motor since its last power up. See bit description of status.codes
 
 #define REG_MOTOR_PROTECT_UNLOCK                               0xA5    //unlock register write UNLOCK_KEY here before setting protected registers
+                                                                       // Motor registers will unlock for 30 seconds, then re-lock.
 #define MOTOR_PROTECT_UNLOCK                                   REG_MOTOR_PROTECT_UNLOCK
 #define MOTOR_PROTECT_UNLOCK_KEY                               0xAA
-#define MOTOR_PROTECT_LOCK_KEY                                 0x00
 
 #define REG_MOTOR_STATISTIC_HALL_DCHS_HI                       0xB0
 #define REG_MOTOR_STATISTIC_HALL_DCHS_LO                       0xB1
